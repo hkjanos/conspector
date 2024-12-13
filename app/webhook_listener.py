@@ -1,51 +1,49 @@
 import os
-import hmac
-import hashlib
+import subprocess
 from flask import Flask, request, jsonify
-from app.utils.config import load_env
-
-# Load environment variables
-load_env()  # Ensure environment variables are loaded from .env
 
 app = Flask(__name__)
 
-# Read the GitHub secret from the environment variables
-GITHUB_SECRET = os.getenv('GITHUB_SECRET')
-if not GITHUB_SECRET:
-    raise ValueError("GITHUB_SECRET environment variable is not set.")
-
 @app.route('/webhook', methods=['POST'])
 def github_webhook():
-    # Verify the payload using the secret
-    if 'X-Hub-Signature-256' not in request.headers:
-        return "Forbidden: Missing signature header.", 403
+    payload = request.json
+    event = request.headers.get('X-GitHub-Event')
 
-    signature = request.headers['X-Hub-Signature-256']
-    payload = request.data
-    computed_hmac = 'sha256=' + hmac.new(GITHUB_SECRET.encode(), payload, hashlib.sha256).hexdigest()
-    print(f"Computed HMAC: {computed_hmac}")
+    if event == 'push':
+        repo_name = payload['repository']['full_name']
+        branch = payload['ref']
+        print(f"Received push event for repo: {repo_name}, branch: {branch}")
 
-    if not hmac.compare_digest(computed_hmac, signature):
-        print(f"Received HMAC: {signature}")
-        print(f"Payload received: {payload}")
-        return "Forbidden: Signature mismatch.", 403
+        # Trigger SBOM generation here after push
+        generate_sbom(repo_name)
 
-    # Parse the payload
-    event = request.headers.get('X-GitHub-Event', 'ping')
-    payload_json = request.json
-
-    if event == 'ping':
-        return jsonify({'msg': 'pong'})
-
-    elif event == 'push':
-        repo_name = payload_json['repository']['full_name']
-        branch = payload_json['ref']
-        commit_id = payload_json['head_commit']['id']
-        print(f"Received push event for repo: {repo_name}, branch: {branch}, commit: {commit_id}")
-        # Add custom logic here
-        return jsonify({'msg': f'Received push event for {repo_name}.'})
+        return jsonify({'msg': f'Generated SBOM for {repo_name}.'})
 
     return "Event not handled", 400
 
+def generate_sbom(repo_name):
+    # Change this to your project directory if necessary
+    project_dir = '/path/to/your/project'
+
+    print(f"Generating SBOM for {repo_name}...")
+    result = subprocess.run(
+        ['syft', 'dir:' + project_dir, '--output', 'spdx-json', '--file', f'{repo_name}-sbom.json'],
+        capture_output=True,
+        text=True
+    )
+
+    if result.returncode != 0:
+        print(f"Error generating SBOM: {result.stderr}")
+    else:
+        print(f"SBOM for {repo_name} generated successfully: {result.stdout}")
+        # Optionally, you can upload or store this SBOM file in your project
+        save_sbom(f'{repo_name}-sbom.json')
+
+def save_sbom(filename):
+    # Example: Saving the SBOM file locally or uploading it somewhere
+    print(f"Saving SBOM to {filename}...")
+    with open(f'/path/to/save/{filename}', 'w') as f:
+        f.write(filename)
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
