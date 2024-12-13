@@ -12,7 +12,7 @@ def github_webhook():
     if event == 'push':
         repo_name = payload['repository']['full_name']
         branch = payload['ref']
-        print(f"Received push event for repo: {repo_name}, branch: {branch}")
+        print(f"Received push event for repo: {repo_name}, branch: {branch} ")
 
         # Trigger SBOM generation here after push
         generate_sbom(repo_name)
