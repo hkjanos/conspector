@@ -13,22 +13,22 @@ def generate_sbom(repo_url, branch):
 
             # Define paths and command components
             sbom_tool_path = os.getenv("SBOM_TOOL_PATH")
-            sbom_output_dir = os.getenv("SBOM_OUTPUT_DIR")
-            if not sbom_output_dir:
-                raise ValueError("SBOM_OUTPUT_DIR environment variable is not set.")
+            report_output_dir = os.getenv("REPORT_OUTPUT_DIR")
+            if not report_output_dir:
+                raise ValueError("REPORT_OUTPUT_DIR environment variable is not set.")
 
-            # Ensure SBOM_OUTPUT_DIR is an absolute path
-            sbom_output_dir = os.path.abspath(sbom_output_dir)
+            # Ensure REPORT_OUTPUT_DIR is an absolute path
+            report_output_dir = os.path.abspath(report_output_dir)
 
             # Extract the repo name (from the URL) and generate the timestamp
             repo_name = clean_repo_url.split("/")[-1]
             timestamp = datetime.now().strftime("%Y-%d-%b-%H-%M-%S")
 
             # Define the full output path (repo_name/branch/timestamp)
-            sbom_output_path = os.path.join(sbom_output_dir, repo_name, branch, timestamp)
+            sbom_output_path = os.path.join(report_output_dir, repo_name, branch, timestamp)
             target_dir = os.path.join(sbom_output_path, repo_name)
 
-            app.logger.info(f"SBOM Output Directory: {sbom_output_dir}")
+            app.logger.info(f"Report Output Directory: {report_output_dir}")
             app.logger.info(f"Target Directory for Cloning: {target_dir}")
 
             # Create the new folder for this SBOM generation (repo_name/branch/timestamp)

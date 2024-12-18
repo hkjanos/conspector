@@ -2,10 +2,9 @@ import hmac
 import hashlib
 import os
 from flask import Flask, request, jsonify
-from app.utils.github import fetch_latest_commit
-from app.sbom.generator import generate_sbom
-from app.utils.config import load_env
-from app.utils.logger import setup_logging
+from ConspectorCLI.app.sbom.generator import generate_sbom
+from ConspectorCLI.app.utils.config import load_env
+from ConspectorCLI.app.utils.logger import setup_logging
 
 load_env()
 setup_logging()
