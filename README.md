@@ -44,30 +44,16 @@ grype --version
 
 ### How to Use the Tool
 
-### 1. Set up Variables in .env
-Before running the Flask app, ensure that you have configured the following environment variables in your .env file:
+### 1. Running the Flask App
+The Flask app sets up a web GUI at http://localhost:5000 that lets you setting up the variables needed to fetch and process the latest commit from your GitHub repository, then it generates the SBOM, and scans for vulnerabilities.
 
-GITHUB_TOKEN=your_github_token
-GITHUB_OWNER=your_github_owner
-GITHUB_REPO=your_github_repo
-GITHUB_BRANCH=your_github_branch (optional, default is master)
-REPORT_OUTPUT_DIR=/path/to/report/directory
-Replace the values with your actual GitHub information and directory paths.
-
-### 2. Running the Flask App
-The Flask app exposes an endpoint /process-latest that processes the latest commit from your GitHub repository, generates the SBOM, and scans for vulnerabilities.
+### 2. Set up Variables on the user interface
+Before running the Flask app, ensure that you have configured the following environment variables on the web user interface.
 
 ### 3. Triggering the Flask App Endpoint
 
-Using Terminal (Linux/macOS):
-To trigger the process_latest_commit endpoint, use curl:
-
-curl -X GET http://127.0.0.1:5000/process-latest
-
-Using PowerShell (Windows):
-To trigger the process_latest_commit endpoint, use Invoke-RestMethod:
-
-Invoke-RestMethod -Uri "http://127.0.0.1:5000/process-latest" -Method Get
+Click on generate Scan for Vulnerabilities, when all is set and sit back and examine the process.
+KNOWN TODO: Harmonize the logger. Now the output is partially displayed on the web GUI, but all is present in the terminal. It is possibly because multiple logger instances are used.
 
 ### Conclusion
 This tool helps streamline the process of analyzing and securing software components by providing detailed insights into dependencies and vulnerabilities. Follow the setup instructions carefully to get started, and use the Flask endpoint to trigger the SBOM generation and vulnerability scanning process.

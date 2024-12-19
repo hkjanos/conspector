@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conspector - Vulnerability Scanner</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">Conspector Software Composition Analyzer</h1>
+        <p class="lead text-center">Analyze vulnerabilities in your GitHub repository</p>
+
+        <!-- Environment Variables Section -->
+        <div class="mb-4">
+            <h3>Environment Variables</h3>
+            <form id="env-form">
+                {% for key, value in env_variables.items() %}
+                    <div class="form-group">
+                        <label for="{{ key }}">{{ key }}</label>
+                        <input type="text" class="form-control" id="{{ key }}" name="{{ key }}" value="{{ value }}">
+                    </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary">Set Variables</button>
+            </form>
+        </div>
+
+        <!-- Logs Section -->
+        <div class="mb-4">
+            <h3>Application Logs</h3>
+            <pre id="logs" style="background: #f4f4f4; padding: 10px; border: 1px solid #ccc; height: 300px; overflow-y: auto;"></pre>
+        </div>
+
+        <!-- Vulnerabilities Scan Section -->
+        <div class="text-center">
+            <button id="scan-button" class="btn btn-primary">Scan for Vulnerabilities</button>
+        </div>
+
+        <div id="status" class="mt-3 text-center"></div>
+
+        <div id="vulnerabilities" class="mt-5">
+            <h3>Vulnerabilities Report</h3>
+            <div id="vuln-list"></div>
+        </div>
+    </div>
+
+    <script>
+        // Handle environment variables form submission
+        $('#env-form').submit(function(event) {
+            event.preventDefault();
+
+            let formData = {};
+            $('#env-form').serializeArray().forEach(field => {
+                formData[field.name] = field.value;
+            });
+
+            $.ajax({
+                url: '/update-env',
+                method: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(formData),
+                success: function(response) {
+                    alert(response.message);
+                },
+                error: function(error) {
+                    alert('Failed to update environment variables.');
+                }
+            });
+        });
+
+        // Fetch logs from the server every 3 seconds
+        setInterval(function() {
+            $.ajax({
+                url: '/get-logs',
+                method: 'GET',
+                success: function(logs) {
+                    $('#logs').text(logs);
+                },
+                error: function() {
+                    $('#logs').text('Failed to fetch logs.');
+                }
+            });
+        }, 3000);
+
+        // Handle Scan button click
+        $('#scan-button').click(function() {
+            $('#status').text('Scanning...');
+            $('#vuln-list').empty();
+
+            $.ajax({
+                url: '/process-latest',
+                method: 'GET',
+                success: function(response) {
+                    $('#status').text('Scan complete!');
+                    let vulnerabilities = response.vulnerabilities_report;
+
+                    if (vulnerabilities) {
+                        let vulnContent = '<ul class="list-group">';
+                        vulnerabilities.forEach(function(vuln) {
+                            vulnContent += `<li class="list-group-item">${vuln.cve}: ${vuln.description}</li>`;
+                        });
+                        vulnContent += '</ul>';
+                        $('#vuln-list').html(vulnContent);
+                    } else {
+                        $('#vuln-list').html('<p>No vulnerabilities found!</p>');
+                    }
+                },
+                error: function(error) {
+                    $('#status').text('Scan failed, please try again.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

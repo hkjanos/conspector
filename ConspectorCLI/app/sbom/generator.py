@@ -1,8 +1,8 @@
-# generate.py
 import subprocess
 import os
 from flask import current_app as app
 from datetime import datetime
+import sys
 
 def generate_sbom(repo_url, branch):
     try:
@@ -48,16 +48,41 @@ def generate_sbom(repo_url, branch):
             else:
                 app.logger.info(f"Repository already cloned at {target_dir}, skipping clone.")
 
-            # Checking if requirements.txt exists
+            # Check if requirements.txt exists and is valid
             repo_path = target_dir
             requirements_path = os.path.join(repo_path, "requirements.txt")
 
-            if not os.path.exists(requirements_path):
-                app.logger.warning(f"Missing requirements.txt in {repo_path}.")
-            elif os.path.getsize(requirements_path) == 0:
-                app.logger.warning(f"Empty requirements.txt found in {repo_path}.")
+            if os.path.exists(requirements_path):
+                try:
+                    with open(requirements_path, "r", encoding="utf-8") as f:
+                        # Try reading the file to check if it's valid
+                        contents = f.read()
+                        if contents.strip():  # If the file is not empty
+                            app.logger.info(f"Valid requirements.txt found at {requirements_path}. Using the original file.")
+                            use_original_requirements = True
+                        else:
+                            raise ValueError("requirements.txt is empty.")
+                except (UnicodeDecodeError, ValueError) as e:
+                    # Log the error and regenerate the requirements.txt
+                    app.logger.warning(f"Failed to parse requirements.txt at {requirements_path}. Error: {e}")
+                    app.logger.info("Regenerating a curated requirements.txt using pipreqs.")
+                    use_original_requirements = False
             else:
-                app.logger.info(f"Valid requirements.txt found in {repo_path}.")
+                app.logger.warning(f"Missing requirements.txt at {requirements_path}.")
+                app.logger.info("Regenerating a curated requirements.txt using pipreqs.")
+                use_original_requirements = False
+
+            # Regenerate the requirements.txt with pipreqs if necessary
+            if not use_original_requirements:
+                try:
+                    subprocess.run(
+                        ["pipreqs", repo_path, "--force"], check=True
+                    )
+                    app.logger.info("Successfully regenerated requirements.txt using pipreqs.")
+                except subprocess.CalledProcessError as e:
+                    app.logger.error(f"Error while regenerating requirements.txt with pipreqs: {e}")
+                    app.logger.info("Attempting to generate requirements.txt using pip freeze.")
+                    generate_pip_freeze_requirements(requirements_path)
 
             # Construct the Syft command
             sbom_output_file = f"sbom-{branch}.json"
@@ -84,3 +109,18 @@ def generate_sbom(repo_url, branch):
     except Exception as e:
         app.logger.error(f"Unexpected error: {e}")
         return None
+
+def generate_pip_freeze_requirements(requirements_path):
+    """Generates the requirements.txt using pip freeze."""
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "freeze"],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        with open(requirements_path, "w") as f:
+            f.write(result.stdout)
+        app.logger.info(f"Successfully generated requirements.txt using pip freeze.")
+    except subprocess.CalledProcessError as e:
+        app.logger.error(f"Error while generating requirements.txt with pip freeze: {e}")
