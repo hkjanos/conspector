@@ -48,11 +48,12 @@ grype --version
 The Flask app sets up a web GUI at http://localhost:5000 that lets you setting up the variables needed to fetch and process the latest commit from your GitHub repository, then it generates the SBOM, and scans for vulnerabilities.
 
 ### 2. Set up Variables on the user interface
-Before running the Flask app, ensure that you have configured the following environment variables on the web user interface.
+Before starting the analysis, ensure that you have configured the environment variables on the web user interface.
+Click on "Set Variables", when all is set.
 
-### 3. Triggering the Flask App Endpoint
+### 3. Initiating Analysis
 
-Click on generate Scan for Vulnerabilities, when all is set and sit back and examine the process.
+Click on "Scan for Vulnerabilities", when all is set and sit back and examine the process.
 KNOWN TODO: Harmonize the logger. Now the output is partially displayed on the web GUI, but all is present in the terminal. It is possibly because multiple logger instances are used.
 
 ### Conclusion
